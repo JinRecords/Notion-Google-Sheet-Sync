@@ -124,13 +124,13 @@ All script settings are controlled by the `config.json` file. Edit this file to 
 | Key | Description |
 | :--- | :--- |
 | `RUN_REPEATEDLY` | Set to `true` to run the script on a loop, or `false` to run it only once. |
-| `REPEAT_INTERVAL_MINUTES` | If `RUN_REPEATEDLY` is `true`, this is the wait time in minutes between syncs. \<br\> **⚠️ Warning**: Setting a very short interval (e.g., less than 10-15 minutes) can result in a high volume of API requests to both Notion and Google. While both services have generous free tiers, excessive use may lead to rate limiting or potential charges. Please use a reasonable interval for your needs. |
+| `REPEAT_INTERVAL_MINUTES` | If `RUN_REPEATEDLY` is `true`, this is the wait time in minutes between syncs.  **⚠️ Warning**: Setting a very short interval (e.g., less than 10-15 minutes) can result in a high volume of API requests to both Notion and Google. While both services have generous free tiers, excessive use may lead to rate limiting or potential charges. Please use a reasonable interval for your needs. |
 | `SAMPLE_SPREADSHEET_ID` | The ID of your Google Sheet. |
 | `NOTION_INTEGRATION_TOKEN` | Your Internal Integration Secret from Notion. |
 | `SYNC_PAIRS` | A list of sync jobs to perform. You can add as many as you need. |
 | `RANGE` | The sheet name and columns to sync (e.g., `Sheet1!A:E`). |
 | `DATABASE_ID` | The ID of the corresponding Notion database. |
-| `PRIORITY` | The sync direction. Can be `'sheet'` or `'notion'`. \<br\> • **`'sheet'`**: One-way sync from Google Sheets to Notion. \<br\> • **`'notion'`**: Two-way sync. Data flows from Notion to Sheets, waits 1 second for formulas to calculate, then flows back from Sheets to Notion. |
+| `PRIORITY` | The sync direction. Can be `'sheet'` or `'notion'`.  • **`'sheet'`**: One-way sync from Google Sheets to Notion.  • **`'notion'`**: Two-way sync. Data flows from Notion to Sheets, waits 1 second for formulas to calculate, then flows back from Sheets to Notion. |
 
 -----
 
@@ -154,6 +154,6 @@ python3 sync.py
 | **`FileNotFoundError: credentials.json`** | Make sure you have downloaded the credentials file from Google Cloud, renamed it to `credentials.json`, and placed it in the same folder as the script. |
 | **`API token is invalid`** or **401 Error** | Your `NOTION_INTEGRATION_TOKEN` in `config.json` is incorrect. Go back to your Notion integration page, re-copy the secret, and paste it into the config file. |
 | **Login fails or `access_denied` error** | This usually means the Google account you are trying to log in with is not listed as a "Test user" in your Google Cloud project's OAuth consent screen. See **Step 3.3**. |
-| **Permission / 403 Errors** | 1.  **Google**: Ensure you have enabled the "Google Sheets API" in your Google Cloud project. \<br\> 2.  **Notion**: Ensure you have shared your Notion database with your integration (Step 2.3). |
+| **Permission / 403 Errors** | 1.  **Google**: Ensure you have enabled the "Google Sheets API" in your Google Cloud project.  2.  **Notion**: Ensure you have shared your Notion database with your integration (Step 2.3). |
 | **Columns are scrambled or missing** | This usually means the header names in your Google Sheet do **not exactly match** the property names in your Notion database. They are case-sensitive\! |
 | **Script doesn't ask for Google login or fails with permission errors after working before** | A `token.pickle` file already exists with old permissions. **Delete the `token.pickle` file** and run the script again to re-authorize it. |
