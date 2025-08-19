@@ -1,0 +1,20 @@
+{
+  "RUN_REPEATEDLY": true,
+  "REPEAT_INTERVAL_MINUTES": 1,
+  "SAMPLE_SPREADSHEET_ID": "Your Google Spreadsheet ID",
+  "NOTION_INTEGRATION_TOKEN": "Your Notion Integration Token",
+  "SYNC_PAIRS": [
+    {
+      "RANGE": "Sheet1!A1:E12",
+      "DATABASE_ID": "Your Notion Database ID",
+      "PRIORITY": "notion"
+    },
+    {
+      "RANGE": "Sheet2!A1:E12",
+      "DATABASE_ID": "Your Notion Database ID",
+      "PRIORITY": "sheet"
+    }
+  ]
+}
+
+
