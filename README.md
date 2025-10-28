@@ -7,8 +7,10 @@ A powerful Python script to sync data between Notion databases and Google Sheets
 ## ✨ Features
 
   * **Bi-directional Sync**: Set Notion or Google Sheets as the "source of truth".
+  * **Calculator Mode**: Use Google Sheets as a powerful calculation engine for your Notion data.
   * **Multi-Sync Support**: Sync multiple sheets to multiple databases in a single run.
-  * **Dynamic Column Mapping**: Automatically matches columns based on the header row in Google Sheets.
+  * **Advanced Column Mapping**: Use a dedicated `ID` column for reliable updates and use a `[replace]` suffix to have one sheet column update a different Notion column.
+  * **Rich Data Support**: Syncs a wide range of Notion property types, including `text`, `number`, `select`, `checkbox`, `formula`, `rollup`, and `relation` (fetches related page titles).
   * **Formula Preservation**: Never overwrites your formulas in Google Sheets.
   * **Scheduled Execution**: Configure the script to run once or repeat at a set interval.
   * **Easy Configuration**: All settings are managed in a simple `config.json` file.
@@ -116,6 +118,11 @@ All script settings are controlled by the `config.json` file. Edit this file to 
       "RANGE": "Sheet2!A:C",
       "DATABASE_ID": "your-second-notion-database-id-here",
       "PRIORITY": "notion"
+    },
+    {
+      "RANGE": "Sheet3!A:F",
+      "DATABASE_ID": "your-third-notion-database-id-here",
+      "PRIORITY": "calculator"
     }
   ]
 }
@@ -130,7 +137,40 @@ All script settings are controlled by the `config.json` file. Edit this file to 
 | `SYNC_PAIRS` | A list of sync jobs to perform. You can add as many as you need. |
 | `RANGE` | The sheet name and columns to sync (e.g., `Sheet1!A:E`). |
 | `DATABASE_ID` | The ID of the corresponding Notion database. |
-| `PRIORITY` | The sync direction. Can be `'sheet'` or `'notion'`.  • **`'sheet'`**: One-way sync from Google Sheets to Notion.  • **`'notion'`**: Two-way sync. Data flows from Notion to Sheets, waits 1 second for formulas to calculate, then flows back from Sheets to Notion. |
+| `PRIORITY` | The sync direction. Can be `'sheet'`, `'notion'`, or `'calculator'`.<br>  • **`'sheet'`**: One-way sync from Google Sheets to Notion.<br>  • **`'notion'`**: Two-way sync. Data flows from Notion to Sheets, waits 1 second, then flows back from Sheets to Notion.<br>  • **`'calculator'`**: An advanced two-way sync that uses the sheet for calculations. See Advanced Usage section for details. |
+
+-----
+
+## 🔧 Advanced Usage
+
+Beyond the basic setup, this script offers powerful features for more complex workflows.
+
+### Calculator Mode (`"PRIORITY": "calculator"`)
+
+The `calculator` mode is designed for workflows where you want to use Google Sheets to perform calculations on your Notion data. It works as follows:
+
+1.  **Notion to Sheet**: Data is first synced from Notion to your Google Sheet. Any formulas in your sheet are preserved. Any columns in your sheet with a header ending in ` [replace]` will be ignored during this step, preserving their current values or formulas.
+2.  **Calculation Pause**: The script waits for 1 second to allow all Google Sheet formulas to recalculate based on the new data from Notion.
+3.  **Sheet to Notion**: The updated data (including the results of your calculations) is synced back to the corresponding writable columns in your Notion database.
+
+This allows you to, for example, have a Notion property that is calculated in a Google Sheet formula and then synced back to a different, writable Notion property.
+
+### ID-Based Updates
+
+By default, the script matches rows between Google Sheets and Notion using the **Title** property. This can be unreliable if titles change.
+
+For a more robust sync, you can add a column named exactly **`ID`** to your Google Sheet (usually as the first column).
+
+*   When data is synced from Notion to the sheet, this column will be automatically populated with the unique Notion Page ID.
+*   When data is synced back to Notion, the script will use this `ID` to update the correct page, even if the title has changed. The script will only perform updates and will not create new pages when an `ID` column is present.
+
+### Replacing Column Values (`[replace]` suffix)
+
+You can have a column in your Google Sheet update a *different* column in Notion by adding ` [replace]` to the end of the header in your Google Sheet.
+
+For example, if you have a header named `Calculated Value [replace]` in your sheet, the data from this column will be used to update the property named `Calculated Value` in Notion.
+
+This is very useful in `calculator` mode. You can have a Notion property (e.g., `Source Number`), use it in a sheet formula, and have the result written to a different column in the sheet (e.g., `Calculated Number [replace]`). The script will then sync this result back to the `Calculated Number` property in Notion.
 
 -----
 
