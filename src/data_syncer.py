@@ -23,47 +23,49 @@ class DataSyncer:
             formula_data = self.google_sheets_client.get_sheet_data(spreadsheet_id, sheet_range, render_option='FORMULA')
             self.google_sheets_client.update_sheet_with_formatting(spreadsheet_id, sheet_range, notion_data, notion_properties, formula_data)
 
-    def _detect_and_update_notion_schema(self, db_id, sheet_grid_data):
-        # This is a complex operation, for now we will just log what we would do
-        logging.info("Schema detection and update from sheet to Notion is not yet implemented.")
-
-    def _process_sheet_data_for_notion(self, sheet_grid_data, notion_properties):
-        if not sheet_grid_data or 'sheets' not in sheet_grid_data or not sheet_grid_data['sheets']:
-            return []
-        
-        rowData = sheet_grid_data['sheets'][0]['data'][0].get('rowData', [])
-        processed_data = []
-
-        for row in rowData:
-            processed_row = []
-            if 'values' in row:
-                for cell in row['values']:
-                    if 'effectiveValue' in cell:
-                        if 'numberValue' in cell['effectiveValue']:
-                            processed_row.append(cell['effectiveValue']['numberValue'])
-                        elif 'stringValue' in cell['effectiveValue']:
-                            processed_row.append(cell['effectiveValue']['stringValue'])
-                        elif 'boolValue' in cell['effectiveValue']:
-                            processed_row.append(cell['effectiveValue']['boolValue'])
-                        else:
-                            processed_row.append(cell.get('formattedValue', ''))
-                    else:
-                        processed_row.append(cell.get('formattedValue', ''))
-            processed_data.append(processed_row)
-        
-        return processed_data
-
     def _sync_sheet_to_notion(self, spreadsheet_id, sheet_range, db_id):
         print("Syncing from Google Sheet to Notion...")
-        sheet_grid_data = self.google_sheets_client.get_sheet_grid_data(spreadsheet_id, sheet_range)
+        sheet_data = self.google_sheets_client.get_sheet_data(
+            spreadsheet_id, 
+            sheet_range, 
+            render_option='FORMATTED_VALUE'
+        )
         
-        self._detect_and_update_notion_schema(db_id, sheet_grid_data)
-        
-        notion_properties = self.notion_client_wrapper.get_database_properties(db_id)
-        processed_data = self._process_sheet_data_for_notion(sheet_grid_data, notion_properties)
+        if sheet_data:
+            notion_properties = self.notion_client_wrapper.get_database_properties(db_id)
+            self.notion_client_wrapper.notion_upsert(sheet_data, db_id, notion_properties)
 
-        if processed_data:
-            self.notion_client_wrapper.notion_upsert(processed_data, db_id, notion_properties)
+    def _sync_calculator_mode(self, spreadsheet_id, sheet_range, db_id):
+        print("Running in Calculator Mode...")
+        # Add a delay to allow Notion to finalize calculations before fetching data.
+        print("Waiting 2 seconds for Notion calculations...")
+        time.sleep(2)
+
+        sheet_name = sheet_range.split('!')[0]
+        header_range = f"{sheet_name}!1:1"
+        sheet_headers_data = self.google_sheets_client.get_sheet_data(spreadsheet_id, header_range)
+        if not sheet_headers_data:
+            print("Could not read headers from the sheet. Skipping calculator mode.")
+            return
+        sheet_headers = sheet_headers_data[0]
+
+        replace_col_indices = [i for i, h in enumerate(sheet_headers) if h.endswith(" [replace]")]
+        notion_target_headers = [h.removesuffix(" [replace]") if h.endswith(" [replace]") else h for h in sheet_headers]
+
+        notion_properties = self.notion_client_wrapper.get_database_properties(db_id)
+        notion_data = self.notion_client_wrapper.get_notion_data(db_id, notion_target_headers, notion_properties)
+
+        if notion_data:
+            formula_data = self.google_sheets_client.get_sheet_data(spreadsheet_id, sheet_range, render_option='FORMULA')
+            self.google_sheets_client.update_sheet_with_formatting(
+                spreadsheet_id, sheet_range, notion_data, notion_properties, formula_data,
+                ignore_col_indices=replace_col_indices
+            )
+
+        print("Waiting 1 second for calculations...")
+        time.sleep(1)
+
+        self._sync_sheet_to_notion(spreadsheet_id, sheet_range, db_id)
 
     def run_sync_cycle(self):
         """
@@ -80,9 +82,10 @@ class DataSyncer:
                     print("Waiting 1 second for calculations...")
                     time.sleep(1)
                     self._sync_sheet_to_notion(spreadsheet_id, sheet_range, db_id)
-
                 elif priority == 'sheet':
                     self._sync_sheet_to_notion(spreadsheet_id, sheet_range, db_id)
+                elif priority == 'calculator':
+                    self._sync_calculator_mode(spreadsheet_id, sheet_range, db_id)
                 else:
                     print(f"Unknown priority '{priority}'. Skipping.")
             

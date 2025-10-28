@@ -46,10 +46,9 @@ class GoogleSheetsClient:
         body = {'requests': requests}
         return self.service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
 
-    def update_sheet_with_formatting(self, spreadsheet_id, range_name, notion_data, notion_properties, formula_data=None):
+    def update_sheet_with_formatting(self, spreadsheet_id, range_name, notion_data, notion_properties, formula_data=None, ignore_col_indices=None):
         """
-        Updates a Google Sheet with data and formatting from Notion, preserving formulas.
-        This is a two-step process: first apply formatting, then update values.
+        Updates a Google Sheet with data and formatting from Notion, preserving formulas and ignoring specified columns.
         """
         sheet_name = range_name.split('!')[0]
         sheet_id = _get_sheet_id(self.service, spreadsheet_id, sheet_name)
@@ -60,8 +59,10 @@ class GoogleSheetsClient:
         # Step 1: Apply formatting requests (data validation, number formats)
         formatting_requests = []
         headers = notion_data[0]
+        if ignore_col_indices is None: ignore_col_indices = []
+
         for col_index, header in enumerate(headers):
-            if header not in notion_properties: continue
+            if header not in notion_properties or col_index in ignore_col_indices: continue
 
             prop = notion_properties[header]
             prop_type = prop['type']
@@ -103,13 +104,13 @@ class GoogleSheetsClient:
             elif prop_type == 'number':
                 num_format = prop['number']['format']
                 patterns = {
-                    'number': '#,##0',
-                    'number_with_commas': '#,##0',
-                    'percent': '0.00%',
-                    'dollar': '$#,##0.00',
-                    'euro': '€#,##0.00'
+                    'number': '#,##0.0000',
+                    'number_with_commas': '#,##0.0000',
+                    'percent': '0.0000%',
+                    'dollar': '$#,##0.0000',
+                    'euro': '€#,##0.0000'
                 }
-                pattern = patterns.get(num_format, '0')
+                pattern = patterns.get(num_format, '0.0000')
                 formatting_requests.append({
                     'repeatCell': {
                         'range': range_spec,
@@ -128,7 +129,7 @@ class GoogleSheetsClient:
         if formatting_requests:
             self.batch_update_sheet(spreadsheet_id, formatting_requests)
 
-        # Step 2: Update cell values, preserving formulas
+        # Step 2: Update cell values, preserving formulas and ignoring columns
         formula_cells = set()
         if formula_data:
             for r, row in enumerate(formula_data):
@@ -140,7 +141,7 @@ class GoogleSheetsClient:
         for r_idx, row in enumerate(notion_data):
             row_data = []
             for c_idx, cell_value in enumerate(row):
-                if (r_idx, c_idx) in formula_cells:
+                if (r_idx, c_idx) in formula_cells or c_idx in ignore_col_indices:
                     row_data.append(None) # This tells the values.update API to skip the cell
                 else:
                     row_data.append(cell_value)
