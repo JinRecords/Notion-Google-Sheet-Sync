@@ -1,19 +1,32 @@
 {
-  "RUN_REPEATEDLY": true,
-  "REPEAT_INTERVAL_MINUTES": 1,
   "SAMPLE_SPREADSHEET_ID": "Your Google Spreadsheet ID",
   "NOTION_INTEGRATION_TOKEN": "Your Notion Integration Token",
   "SYNC_PAIRS": [
     {
-      "RANGE": "Sheet1!A1:E12",
+      "NAME": "Bar",
+      "REPEAT": true,
+      "INTERVAL": "month",
+      "REPEAT_MONTH": "11:59-31",
+      "RANGE": "Leave!A1:G31",
+      "DATABASE_ID": "Your Notion Database ID",
+      "PRIORITY": "calculator"
+    },
+    {
+      "NAME": "Foo",
+      "REPEAT": true,
+      "INTERVAL": "day",
+      "REPEAT_MONTH": "11:59",
+      "RANGE": "Leave!A1:G31",
       "DATABASE_ID": "Your Notion Database ID",
       "PRIORITY": "notion"
     },
     {
-      "RANGE": "Sheet2!A1:E12",
+      "NAME": "Foo Bar",
+      "REPEAT": false,
+      "RANGE": "Leave!A1:G31",
       "DATABASE_ID": "Your Notion Database ID",
       "PRIORITY": "sheet"
-    }
+    },
   ]
 }
 

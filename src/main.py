@@ -13,6 +13,8 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+from scheduler import Scheduler
+
 def main():
     """
     Main function to run the synchronization script.
@@ -29,23 +31,12 @@ def main():
     notion_client_wrapper = NotionClientWrapper(auth_token=config['NOTION_INTEGRATION_TOKEN'])
 
     syncer = DataSyncer(config, google_sheets_client, notion_client_wrapper)
+    scheduler = Scheduler(syncer)
 
-    run_repeatedly = config.get('RUN_REPEATEDLY', False)
-    interval_minutes = config.get('REPEAT_INTERVAL_MINUTES', 30)
-
-    if not run_repeatedly:
-        print("Running sync once.")
-        syncer.run_sync_cycle()
-        print("Sync complete.")
-    else:
-        print(f"Starting repeated sync. Interval: {interval_minutes} minutes.")
-        try:
-            while True:
-                syncer.run_sync_cycle()
-                print(f"Sync cycle complete. Waiting for {interval_minutes} minutes...")
-                time.sleep(interval_minutes * 60)
-        except KeyboardInterrupt:
-            print("\nScript stopped by user. Exiting.")
+    try:
+        scheduler.run()
+    except KeyboardInterrupt:
+        print("\nScript stopped by user. Exiting.")
 
 if __name__ == '__main__':
     main()

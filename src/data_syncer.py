@@ -67,30 +67,32 @@ class DataSyncer:
 
         self._sync_sheet_to_notion(spreadsheet_id, sheet_range, db_id)
 
-    def run_sync_cycle(self):
+    def run_sync_for_pair(self, pair):
         """
-        Runs one full sync cycle for all pairs defined in the config file.
+        Runs a sync for a single pair defined in the config file.
         """
+        job_name = pair.get('NAME', pair.get('RANGE'))
+        print(f"Starting Sync for '{job_name}'...")
+        
         spreadsheet_id = self.config['SAMPLE_SPREADSHEET_ID']
-        for pair in self.config['SYNC_PAIRS']:
-            sheet_range, db_id, priority = pair['RANGE'], pair['DATABASE_ID'], pair['PRIORITY']
-            print(f"Starting Sync | Range: {sheet_range} | DB: {db_id} | Priority: {priority}")
+        sheet_range, db_id, priority = pair['RANGE'], pair['DATABASE_ID'], pair['PRIORITY']
 
-            try:
-                if priority == 'notion':
-                    self._sync_notion_to_sheet(spreadsheet_id, sheet_range, db_id)
-                    print("Waiting 1 second for calculations...")
-                    time.sleep(1)
-                    self._sync_sheet_to_notion(spreadsheet_id, sheet_range, db_id)
-                elif priority == 'sheet':
-                    self._sync_sheet_to_notion(spreadsheet_id, sheet_range, db_id)
-                elif priority == 'calculator':
-                    self._sync_calculator_mode(spreadsheet_id, sheet_range, db_id)
-                else:
-                    print(f"Unknown priority '{priority}'. Skipping.")
-            
-            except Exception as e:
-                print(f"An error occurred with sync pair (Range: {sheet_range}, DB: {db_id}). See sync_errors.log for details.")
-                logging.exception(f"Failed to sync pair (Range: {sheet_range}, DB: {db_id})")
+        try:
+            if priority == 'notion':
+                self._sync_notion_to_sheet(spreadsheet_id, sheet_range, db_id)
+                print("Waiting 1 second for calculations...")
+                time.sleep(1)
+                self._sync_sheet_to_notion(spreadsheet_id, sheet_range, db_id)
+            elif priority == 'sheet':
+                self._sync_sheet_to_notion(spreadsheet_id, sheet_range, db_id)
+            elif priority == 'calculator':
+                self._sync_calculator_mode(spreadsheet_id, sheet_range, db_id)
+            else:
+                print(f"Unknown priority '{priority}' for job '{job_name}'. Skipping.")
+        
+        except Exception as e:
+            print(f"An error occurred with job '{job_name}' (Range: {sheet_range}, DB: {db_id}). See sync_errors.log for details.")
+            logging.exception(f"Failed to sync job '{job_name}' (Range: {sheet_range}, DB: {db_id})")
+            return # Stop further execution for this pair if an error occurs
 
-            print("Sync finished for this pair. \n")
+        print(f"Sync finished for job '{job_name}'. \n")
