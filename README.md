@@ -27,8 +27,8 @@ First, clone this repository and navigate into the project directory. It's highl
 
 ```bash
 # Clone the repository (replace with your URL)
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
+git clone https://github.com/JinRecords/Notion-Google-Sheet-Sync.git
+cd Notion-Google-Sheet-Sync
 
 # Create and activate a virtual environment (optional but recommended)
 python3 -m venv venv
