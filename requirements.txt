@@ -1,3 +1,6 @@
 notion-client
 google-api-python-client
 google-auth-oauthlib
+notion-database
+notion
+google-auth-httplib2
