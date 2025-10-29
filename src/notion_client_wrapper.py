@@ -13,7 +13,11 @@ class NotionClientWrapper:
         """
         Retrieves the properties (schema) of a Notion database.
         """
-        return self.client.databases.retrieve(database_id=database_id)['properties']
+        response = self.client.databases.retrieve(database_id=database_id)
+        if 'properties' not in response:
+            logging.error(f"Failed to retrieve properties for database '{database_id}'. Response: {response}")
+            raise KeyError(f"'properties' not in response for database '{database_id}'")
+        return response['properties']
 
     def update_database_properties(self, database_id, properties):
         """
