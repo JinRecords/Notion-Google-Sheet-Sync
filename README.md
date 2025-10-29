@@ -104,25 +104,23 @@ All script settings are controlled by the `config.json` file. Edit this file to 
 
 ```json
 {
-  "RUN_REPEATEDLY": false,
-  "REPEAT_INTERVAL_MINUTES": 30,
   "SAMPLE_SPREADSHEET_ID": "your-google-sheet-id-here",
   "NOTION_INTEGRATION_TOKEN": "your-internal-integration-secret-here",
   "SYNC_PAIRS": [
     {
       "RANGE": "Sheet1!A:E",
       "DATABASE_ID": "your-first-notion-database-id-here",
-      "PRIORITY": "sheet"
+      "PRIORITY": "sheet",
+      "NAME": "Example One-Way Sync"
     },
     {
       "RANGE": "Sheet2!A:C",
       "DATABASE_ID": "your-second-notion-database-id-here",
-      "PRIORITY": "notion"
-    },
-    {
-      "RANGE": "Sheet3!A:F",
-      "DATABASE_ID": "your-third-notion-database-id-here",
-      "PRIORITY": "calculator"
+      "PRIORITY": "calculator",
+      "NAME": "Daily Calculator Job",
+      "REPEAT": true,
+      "INTERVAL": "day",
+      "REPEAT_DAY": "09:00"
     }
   ]
 }
@@ -130,14 +128,33 @@ All script settings are controlled by the `config.json` file. Edit this file to 
 
 | Key | Description |
 | :--- | :--- |
-| `RUN_REPEATEDLY` | Set to `true` to run the script on a loop, or `false` to run it only once. |
-| `REPEAT_INTERVAL_MINUTES` | If `RUN_REPEATEDLY` is `true`, this is the wait time in minutes between syncs.  **⚠️ Warning**: Setting a very short interval (e.g., less than 10-15 minutes) can result in a high volume of API requests to both Notion and Google. While both services have generous free tiers, excessive use may lead to rate limiting or potential charges. Please use a reasonable interval for your needs. |
 | `SAMPLE_SPREADSHEET_ID` | The ID of your Google Sheet. |
 | `NOTION_INTEGRATION_TOKEN` | Your Internal Integration Secret from Notion. |
-| `SYNC_PAIRS` | A list of sync jobs to perform. You can add as many as you need. |
+| `SYNC_PAIRS` | A list of sync jobs to perform. You can add as many as you need. Each job is an object with its own properties. |
+
+### Sync Pair Properties
+
+| Key | Description |
+| :--- | :--- |
+| `NAME` | (Optional) A human-readable name for the sync job, which will be used in console logs. |
 | `RANGE` | The sheet name and columns to sync (e.g., `Sheet1!A:E`). |
 | `DATABASE_ID` | The ID of the corresponding Notion database. |
 | `PRIORITY` | The sync direction. Can be `'sheet'`, `'notion'`, or `'calculator'`.<br>  • **`'sheet'`**: One-way sync from Google Sheets to Notion.<br>  • **`'notion'`**: Two-way sync. Data flows from Notion to Sheets, waits 1 second, then flows back from Sheets to Notion.<br>  • **`'calculator'`**: An advanced two-way sync that uses the sheet for calculations. See Advanced Usage section for details. |
+
+### Scheduling Properties (Optional, per Sync Pair)
+
+Add these keys inside a `SYNC_PAIRS` object to enable automatic scheduling for that specific sync job.
+
+| Key | Description & Format |
+| :--- | :--- |
+| `REPEAT` | A boolean (`true` or `false`). Set to `true` to enable scheduling for this sync pair. |
+| `INTERVAL` | The frequency of the sync. Can be `"hour"`, `"day"`, `"week"`, `"month"`, or `"year"`. |
+| `REPEAT_HOUR` | Required if `INTERVAL` is `"hour"`. The minute of the hour to run the sync. <br> • **Format**: `"MM"` (e.g., `"30"` to run at `xx:30`). |
+| `REPEAT_DAY` | Required if `INTERVAL` is `"day"`. The time of day to run the sync (in 24-hour format). <br> • **Format**: `"HH:MM"` (e.g., `"18:01"`). |
+| `REPEAT_WEEK` | Required if `INTERVAL` is `"week"`. The time and day of the week to run. <br> • **Format**: `"HH:MM-DayName"` (e.g., `"00:01-Monday"`). |
+| `REPEAT_MONTH` | Required if `INTERVAL` is `"month"`. The time and day of the month to run. If the specified day is greater than the number of days in the current month (e.g., `31` in February), the job will run on the last day of that month. <br> • **Format**: `"HH:MM-DD"` (e.g., `"00:01-1"` for the 1st of the month). |
+| `REPEAT_YEAR` | Required if `INTERVAL` is `"year"`. The time, day, and month to run. <br> • **Format**: `"HH:MM-DD-MM"` (e.g., `"00:01-31-12"` for Dec 31st). |
+
 
 -----
 
@@ -179,11 +196,12 @@ This is very useful in `calculator` mode. You can have a Notion property (e.g., 
 Once your `config.json` is set up, run the script from your terminal:
 
 ```bash
-python3 sync.py
+python3 main.py
 ```
 
   * **First Run**: The first time you run the script, a browser window will open asking you to authorize access to your Google account. After you approve, a `token.pickle` file will be created so you don't have to log in every time.
-  * **Stopping the Script**: If the script is running in a loop (`RUN_REPEATEDLY` is `true`), you can stop it by pressing **`Ctrl+C`** in the terminal.
+  * **How it Runs**: The script will first run any sync pairs that are not configured to repeat. If there are any scheduled jobs (with `"REPEAT": "True"`), it will then enter a loop to check for and run those jobs at their configured times. 
+  * **Stopping the Script**: You can stop the scheduler by pressing **`Ctrl+C`** in the terminal.
 
 -----
 
